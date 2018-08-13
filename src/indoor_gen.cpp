@@ -21,8 +21,8 @@ bool indoorGenCallback(std_srvs::Trigger::Request  &req,
 {
 	float pos_bot_x[1] = {-6};
 	float pos_bot_y[1] = {-6};
-	float pos_tower[2] = {0,0};
-	  randomEnvironmentGenerator.Init(40,40,pos_bot_x,pos_bot_y,1,pos_tower);
+	float pos_tower[2] = {6,6};
+	  randomEnvironmentGenerator.Init(20,20,pos_bot_x,pos_bot_y,1,pos_tower);
 	  randomEnvironmentGenerator.generateEnvironment();
 	 // randomEnvironmentGenerator.Reset();
 return true;

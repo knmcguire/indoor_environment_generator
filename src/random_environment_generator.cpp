@@ -17,14 +17,14 @@ using namespace cv;
 #define EFFICIENT_ENVIRONMENT true
 
 RandomEnvironmentGenerator::RandomEnvironmentGenerator() :
-								  environment_width(10),
-								  environment_height(10),
-								  change_agent_gostraight(0.7f),
-								  wanted_corridor_percentage(0.4f),
-								  room_percentage(0.4f),
-								  total_boxes_generated(0),
-								  amount_of_openings(11),
-								  environment_accepted(false){}
+										  environment_width(10),
+										  environment_height(10),
+										  change_agent_gostraight(0.7f),
+										  wanted_corridor_percentage(0.4f),
+										  room_percentage(0.4f),
+										  total_boxes_generated(0),
+										  amount_of_openings(11),
+										  environment_accepted(false){}
 
 
 void RandomEnvironmentGenerator::getRobotPositions( float* pos_bot_x, float* pos_bot_y, int size_pos_bot, float* pos_tower)
@@ -619,8 +619,23 @@ void RandomEnvironmentGenerator::putLinesInEnvironment()
 	 */
 }
 
+static float wraptopi(float number)
+{
+
+	if(number>(float)M_PI)
+		return (number-(float)(2*M_PI));
+	else if(number< (float)(-1*M_PI))
+		return (number+(float)(2*M_PI));
+	else
+		return (number);
+
+}
+
 void RandomEnvironmentGenerator::RSSIMap()
 {
+
+	float p[3] = {-0.08685 ,5.205e-17,1.329};
+
 	// Prepare the check image for debugging
 	Mat check_slice_rssi_map = Mat::zeros(corridor_contours_img.size(), CV_8UC1);
 
@@ -635,60 +650,76 @@ void RandomEnvironmentGenerator::RSSIMap()
 
 	// Dilate original corridor image
 	Mat corridor_contours_img_dilate;
-	int dilation_size = 5;
+	int dilation_size = 3;
 	Mat kernel = getStructuringElement(  MORPH_ELLIPSE,
 			Size( 2*dilation_size + 1, 2*dilation_size+1 ),
 			Point( dilation_size, dilation_size ) );
 	dilate(corridor_contours_img,corridor_contours_img_dilate,kernel,Point(-1,-1),2,1,1);
 
 
+	float heading[120];
+	for(int it = 0; it<120;it++)
+		heading[it] = -M_PI + (float)it*(2*M_PI)/120;
+
+	int debug_heading = 0;
+
 	// go through each location in the map
 	for(int it_x = 0;it_x<20*environment_width;it_x++)
 	{
+		cout<<it_x<<endl;
 		for(int it_y = 0;it_y<20*environment_height;it_y++)
 		{
+
 
 			// Calculate distance to beacon
 			float distance = (float)sqrt(pow(tower_pos_img.x-it_x,2)+pow(tower_pos_img.y-it_y,2))/10.0f;
 
 
-
-			//RSSI_map.at(it_x).at(it_y).at(0) = distance;
-
-			// If location is not near a obstacle, then just input distance
-			if(corridor_contours_img_dilate.at<uchar>(it_x,it_y) < 200)
-			{
-				RSSI_map.at(it_x).at(it_y).at(0) = distance;
-			}else
-			{
-				// Normal distribution with a high std around obstacles
-				std::random_device rd;
-				std::mt19937 e2(rd());
-				std::normal_distribution<float> dist(distance, 2.0f);
-				float noisy_distance = dist(e2);
-				if(noisy_distance>0)
-					RSSI_map.at(it_x).at(it_y).at(0) = noisy_distance;
-				else
-					RSSI_map.at(it_x).at(it_y).at(0) = distance;
-			}
-
-			// Save a slice of the rssi map for debugging
-			check_slice_rssi_map.at<uchar>(it_x,it_y)=(uchar)RSSI_map.at(it_x).at(it_y).at(0)*5;
-
 			// Go to bearing difference
-			for(int it_w = 0;it_w<1;it_w++)
+			for(int it_w = debug_heading;it_w<debug_heading+1;it_w++)
 			{
+
+				// calculate the bearing and the adjusted distance because of it
+				float bearing = wraptopi((float)atan2((float)(tower_pos_img.y-it_y)/10.0f,(float)(tower_pos_img.x-it_x)/10.0f)-heading[it_w]);
+				float distance_bearing = distance*(bearing*bearing*p[0]+bearing*p[1]+p[2]);
+
+
+				// If location is not near a obstacle, then just input distance
+				if(corridor_contours_img_dilate.at<uchar>(it_x,it_y) < 200)
+				{
+					RSSI_map.at(it_x).at(it_y).at(it_w) = distance_bearing;
+
+
+				}else
+				{
+					// Normal distribution with a high std around obstacles
+					std::random_device rd;
+					std::mt19937 e2(rd());
+					std::normal_distribution<float> dist(distance_bearing, 2.0f);
+					float noisy_distance = dist(e2);
+					if(noisy_distance>0)
+						RSSI_map.at(it_x).at(it_y).at(it_w) = noisy_distance;
+					else
+						RSSI_map.at(it_x).at(it_y).at(it_w) = distance_bearing;
+				}
+
+				// Save a slice of the rssi map for debugging
+				if(it_w == debug_heading)
+					check_slice_rssi_map.at<uchar>(it_x,it_y)=(uchar)RSSI_map.at(it_x).at(it_y).at(it_w)*10;
+
 
 			}
 
 		}
 	}
-
-	//display slice for debugging
-	normalize(check_slice_rssi_map,check_slice_rssi_map,255,0,NORM_MINMAX);
 	namedWindow("display",WINDOW_NORMAL);// Create a window for display.
+
+	//normalize(check_slice_rssi_map,check_slice_rssi_map,255,0,NORM_MINMAX);
 	imshow("display", check_slice_rssi_map );                   // Show our image inside it.
 	waitKey(0);
+
+
+	//display slice for debugging
 
 }
 
