@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<launch> 
+
+
+  <node pkg="indoor_environment_generator" type="indoor_environment_generator_node" name="indoor_environment_generator_node" output="screen" launch-prefix="gdb -ex run --args">
+  </node>
+
+
+
+
+</launch>

@@ -29,6 +29,7 @@ RandomEnvironmentGenerator::RandomEnvironmentGenerator() :
 
 void RandomEnvironmentGenerator::getRobotPositions()
 {
+	cout<<"Robot positions"<<endl;
 	// place holder values
 	 float pos_bot_x[2] = {0,4};
 	 float pos_bot_y[2] = {0,5};
@@ -36,7 +37,7 @@ void RandomEnvironmentGenerator::getRobotPositions()
 
 	 for (int i = 0; i<2;i++)
 	 {
-     vector<int> initial_bot_position (0,0);
+     vector<int> initial_bot_position{0,0};
      initial_bot_position.at(0)=pos_bot_x[i]/2+environment_width/2;
      initial_bot_position.at(1)=pos_bot_y[i]/2+environment_height/2;
      initial_bot_positions.push_back(initial_bot_position);
@@ -47,10 +48,10 @@ void RandomEnvironmentGenerator::getRobotPositions()
 void RandomEnvironmentGenerator::Init()
 {
   //TODO use the params of loop functions, if they exist
-
+  cout<<"init"<<endl;
 // placeholder values
-  float arena_size_X = 15;
-  float arena_size_y = 15;
+  float arena_size_X = 20;
+  float arena_size_y = 20;
 
   environment_accepted =false;
   environment_width = (int)(arena_size_X/2);
@@ -60,30 +61,20 @@ void RandomEnvironmentGenerator::Init()
   it_box = 0;
 
   getRobotPositions();
-  initializeGrid();
+ initializeGrid();
   initializeAgents();
-  bin_corridor_img = Mat::zeros(environment_width, environment_height, CV_8UC1);
-  corridor_contours_img = Mat::zeros(bin_corridor_img_large.size(), CV_8UC1);
+  /* bin_corridor_img = Mat::zeros(environment_width, environment_height, CV_8UC1);
+  corridor_contours_img = Mat::zeros(bin_corridor_img_large.size(), CV_8UC1);*/
 
 }
 
 
 
-void RandomEnvironmentGenerator::Reset(std::string file_name)
+void RandomEnvironmentGenerator::Reset()
 {
 
- cout<<"Regenerate Environment"<<endl;
 
-    it_box = 0;
-    if(file_name.length()==0)
-    {
-      initial_bot_positions.clear();
       generateEnvironment();
-    std::cout<<"random generated: "<<file_name<<std::endl;
-    }
-    else{
-      generateEnvironmentFromFile(file_name);
-    }
 
 }
 
@@ -91,15 +82,12 @@ void RandomEnvironmentGenerator::Reset(std::string file_name)
 void RandomEnvironmentGenerator::generateEnvironment(void)
 {
 
-  std::cout<<"check"<<std::endl;
+  std::cout<<"start generate environment"<<std::endl;
   corridors_are_connected = false;
   rng = cv::getTickCount();
 
   while(!environment_accepted){
     while (!corridors_are_connected) {
-      getRobotPositions();
-      initializeGrid();
-      initializeAgents();
       bin_corridor_img = Mat::zeros(environment_width, environment_height, CV_8UC1);
 
       for (int it_total = 0; it_total < 100; it_total++) {
@@ -173,6 +161,8 @@ void RandomEnvironmentGenerator::generateEnvironment(void)
 
 void RandomEnvironmentGenerator::initializeGrid(void)
 {
+	cout<<"initialize Grid"<<endl;
+
   vector<vector<int> > circ_action_init {{0, 0}, {0, 0}, {0, 0}, {0, 0}};
   //Resizing environment grid
   environment_grid.resize(environment_width);
@@ -192,10 +182,13 @@ void RandomEnvironmentGenerator::initializeGrid(void)
 
 void RandomEnvironmentGenerator::initializeAgents(void)
 {
+	cout<<"initialize Agents"<<endl;
+
 
   current_agent_positions.resize(2);
   // initial robot positions, place agent where they are
-  vector<vector<int> > circ_action_init{{0, 1}, {1, 0}, {0, -1}, { -1, 0}};
+  vector<vector<int> > circcout<<"getCorridorPercentage"<<endl;
+_action_init{{0, 1}, {1, 0}, {0, -1}, { -1, 0}};
 
 
   for (int it = 0; it < initial_bot_positions.size(); it++) {
@@ -209,6 +202,9 @@ void RandomEnvironmentGenerator::initializeAgents(void)
 
 void RandomEnvironmentGenerator::findAgents(void)
 {
+
+	  std::cout<<"find agent positions"<<std::endl;
+
   current_agent_positions.clear();
 
   int k = 0;
@@ -257,11 +253,15 @@ int mod(int a, int b)
 
 void RandomEnvironmentGenerator::setNextLocation(std::vector<int> current_bot_position)
 {
+
   vector<vector<int> >circ_action_temp = environment_grid.at(current_bot_position.at(0)).at(current_bot_position.at(1)).circ_action;
   vector<int> next_location{current_bot_position.at(0) + circ_action_temp.at(0).at(0), current_bot_position.at(1) + circ_action_temp.at(0).at(1)};
 
 
-  vector<int> next_location_corrected (mod(next_location.at(0), environment_width), mod(next_location.at(1), environment_height));
+
+
+  vector<int> next_location_corrected {mod(next_location.at(0), environment_width), mod(next_location.at(1), environment_height)};
+
 
   environment_grid.at(current_bot_position.at(0)).at(current_bot_position.at(1)).is_agent_present = false;
   environment_grid.at(current_bot_position.at(0)).at(current_bot_position.at(1)).is_corridor_present = true;
@@ -273,6 +273,8 @@ void RandomEnvironmentGenerator::setNextLocation(std::vector<int> current_bot_po
 }
 float RandomEnvironmentGenerator::getCorridorPercentage()
 {
+
+cout<<"getCorridorPercentage"<<endl;
   int count_corridor = 0;
   for (int itx = 0; itx < environment_width; itx++) {
     for (int ity = 0; ity < environment_height; ity++) {
@@ -336,6 +338,9 @@ void RandomEnvironmentGenerator::dfs(int x, int y, int current_label) {
 void RandomEnvironmentGenerator::checkConnectivity()
 {
 
+	cout<<"checkConnectivity"<<endl;
+
+
   vector<int> linked;
   //Resizing connectivity_labels grid
   connectivity_labels.resize(environment_width);
@@ -348,6 +353,8 @@ void RandomEnvironmentGenerator::checkConnectivity()
       connectivity_labels.at(itx).at(ity)=0;
     }
   }
+
+
   vector<int> neighbors_labels;
   int next_label = 0;
 
@@ -440,7 +447,7 @@ void RandomEnvironmentGenerator::makeRooms()
       for(int ity = boundRect.y; ity<(boundRect.y + boundRect.height); ity++)
       {
 
-        vector<int> coord_mod_rooms ((itx-boundRect.x) % (int)(boundRect.width /2), (ity-boundRect.y) % (int)(boundRect.height /2));
+        vector<int> coord_mod_rooms {(itx-boundRect.x) % (int)(boundRect.width /2), (ity-boundRect.y) % (int)(boundRect.height /2)};
         if( boundRect.width<(float)environment_width * 20 *room_percentage)
           coord_mod_rooms.at(0) = 1;
         if(boundRect.height<(float)environment_height * 20 *room_percentage)

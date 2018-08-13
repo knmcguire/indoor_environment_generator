@@ -7,13 +7,23 @@
 
 
 #include "ros/ros.h"
-#include "std_msgs/String.h"
+#include "std_msgs/Bool.h"
+#include "std_srvs/Trigger.h"
 
 #include <sstream>
 
-void indoorGenCallback(const std_msgs::String::ConstPtr& msg)
+#include "random_environment_generator.h"
+
+  RandomEnvironmentGenerator randomEnvironmentGenerator;
+
+bool indoorGenCallback(std_srvs::Trigger::Request  &req,
+		std_srvs::Trigger::Response &res)
 {
-  ROS_INFO("I heard: [%s]", msg->data.c_str());
+
+	  randomEnvironmentGenerator.Init();
+	  randomEnvironmentGenerator.generateEnvironment();
+	 // randomEnvironmentGenerator.Reset();
+return true;
 }
 
 int main(int argc, char **argv)
@@ -24,7 +34,8 @@ int main(int argc, char **argv)
 
   ros::NodeHandle n;
 
-  ros::Subscriber sub = n.subscribe("indoor_gen", 1000, indoorGenCallback);
+ // ros::Subscriber sub = n.subscribe("indoor_gen", 1000, indoorGenCallback);
+  ros::ServiceServer service = n.advertiseService("indoor_gen", indoorGenCallback);
 
 
   ros::spin();

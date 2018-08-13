@@ -37,7 +37,7 @@ class RandomEnvironmentGenerator
 public:
   RandomEnvironmentGenerator();
   virtual void Init();
-  virtual void Reset(std::string file_name);
+  virtual void Reset();
 
   void initializeGrid();
   void initializeAgents();
