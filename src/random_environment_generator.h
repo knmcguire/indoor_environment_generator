@@ -23,6 +23,7 @@
 #include <stdlib.h>     /* srand, rand */
 #include <stdio.h>
 #include <ctime>
+#include <random>
 //#include <chrono>
 
 
@@ -36,7 +37,7 @@ class RandomEnvironmentGenerator
 {
 public:
   RandomEnvironmentGenerator();
-  virtual void Init();
+  void Init(float arena_size_X, float arena_size_Y, float* pos_bot_x, float* pos_bot_y, int size_pos_bot, float* pos_tower);
   virtual void Reset();
 
   void initializeGrid();
@@ -56,14 +57,17 @@ public:
   void putLinesInEnvironment();
   void generateEnvironment();
   void generateEnvironmentFromFile(std::string file_name);
-  void getRobotPositions();
+  void getRobotPositions( float* pos_bot_x, float* pos_bot_y, int size_pos_bot, float* pos_tower);
   void dfs(int x, int y, int current_label);
+
+  void RSSIMap();
 
 
 private:
   std::vector<std::vector<grid_element_status_t> > environment_grid;
   int environment_width;
   int environment_height;
+  std::vector<int> tower_position;
   std::vector<std::vector<int> > initial_bot_positions;
   std::vector<std::vector<int> > current_agent_positions;
   float change_agent_gostraight;
