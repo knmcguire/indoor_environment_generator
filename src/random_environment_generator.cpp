@@ -6,7 +6,7 @@
  */
 
 #include "random_environment_generator.h"
-#include <chrono>
+//#include <chrono>
 
 
 //#define ACCEPT_ENVIRONMENT
@@ -29,23 +29,32 @@ RandomEnvironmentGenerator::RandomEnvironmentGenerator() :
 
 void RandomEnvironmentGenerator::getRobotPositions()
 {
+	// place holder values
+	 float pos_bot_x[2] = {0,4};
+	 float pos_bot_y[2] = {0,5};
 
-     vector<int> initial_bot_position{0,0};
-     initial_bot_position.at(0)=pos_bot.GetX()/2+environment_width/2;
-     initial_bot_position.at(1)=pos_bot.GetY()/2+environment_height/2;
+
+	 for (int i = 0; i<2;i++)
+	 {
+     vector<int> initial_bot_position (0,0);
+     initial_bot_position.at(0)=pos_bot_x[i]/2+environment_width/2;
+     initial_bot_position.at(1)=pos_bot_y[i]/2+environment_height/2;
      initial_bot_positions.push_back(initial_bot_position);
-  }
+	 }
+
 }
 
-void RandomEnvironmentGenerator::Init(TConfigurationNode &t_node)
+void RandomEnvironmentGenerator::Init()
 {
   //TODO use the params of loop functions, if they exist
 
-  const CVector3& cArenaSize = CSimulator::GetInstance().GetSpace().GetArenaSize();
+// placeholder values
+  float arena_size_X = 15;
+  float arena_size_y = 15;
 
   environment_accepted =false;
-  environment_width = (int)(cArenaSize.GetX()/2);
-  environment_height=(int)(cArenaSize.GetY()/2);
+  environment_width = (int)(arena_size_X/2);
+  environment_height=(int)(arena_size_X/2);
 
   /* Go through them */
   it_box = 0;
@@ -59,29 +68,6 @@ void RandomEnvironmentGenerator::Init(TConfigurationNode &t_node)
 }
 
 
-void RandomEnvironmentGenerator::ClearEnvironment()
-{
-  std::cout<<"clear environment"<<std::endl;
-  CLoopFunctions loopfunction;
-
-  if(total_boxes_generated!=0)
-  {
-    for(int i = 0;i<total_boxes_generated+1;i++){
-      //auto start_time = std::chrono::high_resolution_clock::now();
-
-      loopfunction.RemoveEntity(*boxEntities.at(i));
-      /* auto end_time = std::chrono::high_resolution_clock::now();
-     auto time = end_time - start_time;
-
-     std::cout << "It took " <<
-       std::chrono::duration_cast<std::chrono::microseconds>(time).count() << " to run.\n";*/
-    }
-  }
-     boxEntities.clear();
-     total_boxes_generated =0;
-     environment_accepted =false;
-
-}
 
 void RandomEnvironmentGenerator::Reset(std::string file_name)
 {
@@ -100,9 +86,7 @@ void RandomEnvironmentGenerator::Reset(std::string file_name)
     }
 
 }
-void RandomEnvironmentGenerator::Destroy()
-{
-}
+
 
 void RandomEnvironmentGenerator::generateEnvironment(void)
 {
@@ -127,13 +111,6 @@ void RandomEnvironmentGenerator::generateEnvironment(void)
           setNextLocation(current_agent_positions.at(it));
 
         }
-
-/*        for (int itx = 0; itx < environment_width; itx++) {
-           for (int ity = 0; ity < environment_height; ity++) {
-               cout<<environment_grid.at(itx).at(ity).is_corridor_present<<" ";
-           }
-           cout<<" "<<endl;
-         }*/
 
         if (getCorridorPercentage() > wanted_corridor_percentage) {
           break;
@@ -192,32 +169,11 @@ void RandomEnvironmentGenerator::generateEnvironment(void)
 #endif
 }
 
-void RandomEnvironmentGenerator::generateEnvironmentFromFile(std::string file_name)
-{
-
-  bin_corridor_img_large = Mat::zeros(environment_width * 20, environment_height * 20, CV_8UC1);
-  resize(bin_corridor_img, bin_corridor_img_large, bin_corridor_img_large.size(), 0, 0, INTER_NEAREST);
-  corridor_contours_img = Mat::zeros(bin_corridor_img_large.size(), CV_8UC1);
-  //std::cout<<"size "<<bin_corridor_img_large.size()<<std::endl;
-
-  cv::Mat read_img = cv::imread(file_name, CV_LOAD_IMAGE_GRAYSCALE);
-  resize(read_img, corridor_contours_img, corridor_contours_img.size(), 0, 0, INTER_NEAREST);
-
-
-
-#if EFFICIENT_ENVIRONMENT
-  putLinesInEnvironment();
-  putBlocksInEnvironment();
-#else
-  putBlocksInEnvironment();
-#endif
-
-}
 
 
 void RandomEnvironmentGenerator::initializeGrid(void)
 {
-  vector<vector<int>> circ_action_init{{0, 0}, {0, 0}, {0, 0}, {0, 0}};
+  vector<vector<int> > circ_action_init {{0, 0}, {0, 0}, {0, 0}, {0, 0}};
   //Resizing environment grid
   environment_grid.resize(environment_width);
   for (int it = 0; it < environment_width; it++) {
@@ -239,7 +195,7 @@ void RandomEnvironmentGenerator::initializeAgents(void)
 
   current_agent_positions.resize(2);
   // initial robot positions, place agent where they are
-  vector<vector<int>> circ_action_init{{0, 1}, {1, 0}, {0, -1}, { -1, 0}};
+  vector<vector<int> > circ_action_init{{0, 1}, {1, 0}, {0, -1}, { -1, 0}};
 
 
   for (int it = 0; it < initial_bot_positions.size(); it++) {
@@ -275,7 +231,7 @@ void RandomEnvironmentGenerator::decideNextAction(std::vector<int> current_bot_p
   float random_percentage = rng.uniform(0.0f,1.0f);
   float percentage_rest = 1.0f - change_agent_gostraight;
 
-  vector<vector<int>>circ_action_temp = environment_grid.at(current_bot_position.at(0)).at(current_bot_position.at(1)).circ_action;
+  vector<vector<int> >circ_action_temp = environment_grid.at(current_bot_position.at(0)).at(current_bot_position.at(1)).circ_action;
 
   string state;
   if (random_percentage <= change_agent_gostraight) {
@@ -301,11 +257,11 @@ int mod(int a, int b)
 
 void RandomEnvironmentGenerator::setNextLocation(std::vector<int> current_bot_position)
 {
-  vector<vector<int>>circ_action_temp = environment_grid.at(current_bot_position.at(0)).at(current_bot_position.at(1)).circ_action;
+  vector<vector<int> >circ_action_temp = environment_grid.at(current_bot_position.at(0)).at(current_bot_position.at(1)).circ_action;
   vector<int> next_location{current_bot_position.at(0) + circ_action_temp.at(0).at(0), current_bot_position.at(1) + circ_action_temp.at(0).at(1)};
 
 
-  vector<int> next_location_corrected{mod(next_location.at(0), environment_width), mod(next_location.at(1), environment_height)};
+  vector<int> next_location_corrected (mod(next_location.at(0), environment_width), mod(next_location.at(1), environment_height));
 
   environment_grid.at(current_bot_position.at(0)).at(current_bot_position.at(1)).is_agent_present = false;
   environment_grid.at(current_bot_position.at(0)).at(current_bot_position.at(1)).is_corridor_present = true;
@@ -443,7 +399,7 @@ void RandomEnvironmentGenerator::makeBoundariesCorridors()
 
   waitKey(0);*/
 
-  vector<vector<Point>> contours_coordinates;
+  vector<vector<Point> > contours_coordinates;
   Mat hierarchy;
 
   findContours(bin_corridor_img_large, contours_coordinates, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
@@ -452,7 +408,7 @@ void RandomEnvironmentGenerator::makeBoundariesCorridors()
   corridor_contours_img = Mat::zeros(bin_corridor_img_large.size(), CV_8UC1);
   for (int i = 0; i < contours_coordinates.size(); i++) {
 
-    drawContours(corridor_contours_img, contours_coordinates, i, color, 1  , LINE_4, hierarchy, 0);
+    drawContours(corridor_contours_img, contours_coordinates, i, color, 1  , cv::LINE_4, hierarchy, 0);
   }
 
 #if !EFFICIENT_ENVIRONMENT
@@ -471,7 +427,7 @@ void RandomEnvironmentGenerator::makeRooms()
   Mat bin_corridor_img_large_inv = Mat::zeros(environment_width * 20, environment_height * 20, CV_8UC1);
   bitwise_not(bin_corridor_img_large,bin_corridor_img_large_inv);
   corridor_contours_img.copyTo(corridor_contours_img_save);
-  vector<vector<Point>> contours_coordinates;
+  vector<vector<Point> > contours_coordinates;
   Mat hierarchy;
 
   findContours(bin_corridor_img_large_inv, contours_coordinates, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
@@ -484,7 +440,7 @@ void RandomEnvironmentGenerator::makeRooms()
       for(int ity = boundRect.y; ity<(boundRect.y + boundRect.height); ity++)
       {
 
-        vector<int> coord_mod_rooms{(itx-boundRect.x) % (int)(boundRect.width /2), (ity-boundRect.y) % (int)(boundRect.height /2)};
+        vector<int> coord_mod_rooms ((itx-boundRect.x) % (int)(boundRect.width /2), (ity-boundRect.y) % (int)(boundRect.height /2));
         if( boundRect.width<(float)environment_width * 20 *room_percentage)
           coord_mod_rooms.at(0) = 1;
         if(boundRect.height<(float)environment_height * 20 *room_percentage)
@@ -505,18 +461,6 @@ void RandomEnvironmentGenerator::makeRooms()
   }
 
 
-/*
-  for (int itx = 0; itx < environment_width * 20; itx++) {
-    for (int ity = 0; ity < environment_height * 20; ity++) {
-
-      vector<int> coord_mod_rooms{itx % (int)(environment_width * 20 * room_percentage), ity % (int)(environment_height * 20 * room_percentage)};
-
-      if ((coord_mod_rooms.at(0) == 0 || coord_mod_rooms.at(1) == 0))
-        if (bin_corridor_img_large.at<uchar>(ity, itx) == 0) {
-          rectangle(corridor_contours_img, Point(itx - 1, ity - 1), Point(itx + 1, ity + 1), Scalar(255), 1, 8, 0);
-        }
-    }
-  }*/
 }
 
 void RandomEnvironmentGenerator::makeRandomOpenings()
@@ -549,24 +493,13 @@ void RandomEnvironmentGenerator::makeRandomOpenings()
     }
   }
 
-/*
-  namedWindow( "Display window", WINDOW_AUTOSIZE );// Create a window for display.
-  imshow( "Display window", corridor_contours_img );                   // Show our image inside it.
-
-  waitKey(0);*/
-/*  for (int it = 0; it < amount_of_openings; it++) {
-    vector<int> random_coordinate{rng.uniform(half_size_openings, environment_height * 20 - half_size_openings), rng.uniform(half_size_openings, environment_width * 20 - half_size_openings)};
-    rectangle(corridor_contours_img, Point(random_coordinate.at(0) - half_size_openings, random_coordinate.at(1) - half_size_openings), Point(random_coordinate.at(0) + half_size_openings, random_coordinate.at(1) + half_size_openings), Scalar(0), CV_FILLED, 8, 0);
-    //circle(corridor_contours_img, Point(random_coordinate.at(0), random_coordinate.at(1)), half_size_openings, Scalar(0), -1, 8, 0);
-
-
-  }*/
-
 
 }
 
 void RandomEnvironmentGenerator::putBlocksInEnvironment()
 {
+
+	/*
 
   CBoxEntity* boxEntity;
 #if EFFICIENT_ENVIRONMENT
@@ -578,15 +511,6 @@ void RandomEnvironmentGenerator::putBlocksInEnvironment()
 
   std::ostringstream box_name;
 
-/*  if(i<total_boxes_generated)
-  {
-    loop_function.MoveEntity(boxEntities.at(i)->GetEmbodiedEntity(),boxEntityPos,boxEntityRot);
-  }else
-  {
-    CBoxEntity *boxEntity = new CBoxEntity(box_name.str(), boxEntityPos, boxEntityRot, false, boxEntitySize);
-    loop_function.AddEntity(*boxEntity);
-    boxEntities.push_back(boxEntity);
-  }*/
 
   CLoopFunctions loopfunction;
   for (int itx = 0; itx < environment_width * 20; itx++) {
@@ -609,21 +533,18 @@ void RandomEnvironmentGenerator::putBlocksInEnvironment()
     }
   }
   total_boxes_generated=it_box-1;
+  */
 
 }
 
 
 void RandomEnvironmentGenerator::putLinesInEnvironment()
 {
-
+/*
   // Show our image inside it.
   vector<Vec4i> lines;
   HoughLinesP(corridor_contours_img, lines, 1, CV_PI/180*90, 10, 0, 0 );
-/*   namedWindow( "corridor_contours_img", WINDOW_AUTOSIZE );
-   imshow( "corridor_contours_img", corridor_contours_img );
-   namedWindow( "img_lines ", WINDOW_AUTOSIZE );*/
 
-  //Show the hough detection
   Mat img_lines = corridor_contours_img.clone();
   for( size_t i = 0; i < lines.size(); i++ )
   {
@@ -631,8 +552,7 @@ void RandomEnvironmentGenerator::putLinesInEnvironment()
     Vec4i l = lines[i];
     line( img_lines, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(100,100,100), 3, CV_AA);
     line(corridor_contours_img, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,0), 2, CV_AA);
-/*     imshow( "img_lines ", img_lines );
-     waitKey(0);*/
+
   }
 
 
@@ -669,5 +589,5 @@ void RandomEnvironmentGenerator::putLinesInEnvironment()
   }
 
   total_boxes_generated=it_box-1;
-
+*/
 }

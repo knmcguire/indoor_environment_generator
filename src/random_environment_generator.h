@@ -8,14 +8,6 @@
 #ifndef ARGOS_BRIDGE_PLUGIN_LOOP_FUNCTIONS_RANDOM_ENVIRONMENT_GENERATOR_H_
 #define ARGOS_BRIDGE_PLUGIN_LOOP_FUNCTIONS_RANDOM_ENVIRONMENT_GENERATOR_H_
 
-//ARGoS libraries
-#include <argos3/core/simulator/loop_functions.h>
-#include <argos3/plugins/simulator/entities/box_entity.h>
-#include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
-#include <argos3/core/simulator/entity/entity.h>
-
-
-
 
 //OpenCV libraries
 #include <opencv2/opencv.hpp>
@@ -31,13 +23,12 @@
 #include <stdlib.h>     /* srand, rand */
 #include <stdio.h>
 #include <ctime>
-#include <chrono>
+//#include <chrono>
 
-using namespace argos;
 
 struct grid_element_status_t {
   bool is_agent_present;
-  std::vector<std::vector<int>> circ_action;
+  std::vector<std::vector<int> > circ_action;
   bool is_corridor_present;
 };
 
@@ -45,9 +36,8 @@ class RandomEnvironmentGenerator
 {
 public:
   RandomEnvironmentGenerator();
-  virtual void Init(TConfigurationNode &t_node);
+  virtual void Init();
   virtual void Reset(std::string file_name);
-  virtual void Destroy();
 
   void initializeGrid();
   void initializeAgents();
@@ -67,16 +57,15 @@ public:
   void generateEnvironment();
   void generateEnvironmentFromFile(std::string file_name);
   void getRobotPositions();
-  void ClearEnvironment();
   void dfs(int x, int y, int current_label);
 
 
 private:
-  std::vector<std::vector<grid_element_status_t>> environment_grid;
+  std::vector<std::vector<grid_element_status_t> > environment_grid;
   int environment_width;
   int environment_height;
-  std::vector<std::vector<int>> initial_bot_positions;
-  std::vector<std::vector<int>> current_agent_positions;
+  std::vector<std::vector<int> > initial_bot_positions;
+  std::vector<std::vector<int> > current_agent_positions;
   float change_agent_gostraight;
   float wanted_corridor_percentage;
   cv::Mat bin_corridor_img;
@@ -86,11 +75,10 @@ private:
 
   float room_percentage;
   int total_boxes_generated;
-  std::vector<CBoxEntity*> boxEntities;
   int amount_of_openings;
   bool environment_accepted;
   cv::RNG rng;
-  std::vector<std::vector<int>> connectivity_labels;
+  std::vector<std::vector<int> > connectivity_labels;
 
   int it_box;
 
