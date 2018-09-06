@@ -59,6 +59,8 @@ void RandomEnvironmentGenerator::Init(float arena_size_X, float arena_size_Y, fl
 	environment_width = (int)(arena_size_X/2);
 	environment_height=(int)(arena_size_X/2);
 
+	it_box = 0;
+
 	// Initialize the generator
 	getRobotPositions( pos_bot_x,  pos_bot_y,  size_pos_bot,  pos_tower);
 	initializeGrid();
@@ -358,6 +360,10 @@ void RandomEnvironmentGenerator::dfs(int x, int y, int current_label) {
 void RandomEnvironmentGenerator::checkConnectivity()
 {
 
+
+
+
+
 	cout<<"checkConnectivity"<<endl;
 
 
@@ -567,7 +573,7 @@ void RandomEnvironmentGenerator::putBlocksInEnvironment()
 
 void RandomEnvironmentGenerator::putLinesInEnvironment()
 {
-	/*
+
   // Show our image inside it.
   vector<Vec4i> lines;
   HoughLinesP(corridor_contours_img, lines, 1, CV_PI/180*90, 10, 0, 0 );
@@ -583,23 +589,65 @@ void RandomEnvironmentGenerator::putLinesInEnvironment()
   }
 
 
+  ofstream myfile;
+  myfile.open ("/home/knmcguire/Software/catkin_ws/src/indoor_environment_generator/models/random_generated_environment/test_model.sdf");
+  myfile << "<?xml version='1.0'?>\n <sdf version='1.4'> \n <model name='crazy_maze'> \n <static>1</static>\n";
 
   // Initialize box entity characteristics
+		  /*
   CBoxEntity* boxEntity;
   CQuaternion boxEntityRot{0, 0, 0, 0};
   CVector3 boxEntitySize{0.1, 0.1, 0.5};
   std::ostringstream box_name;
 
-  CLoopFunctions loopfunction;
+  CLoopFunctions loopfunction;*/
+
+  std::ostringstream box_name;
+
   for( size_t i = 0; i < lines.size(); i++ )
   {
+
+	   box_name.str("");
+	    box_name << "box" << (it_box);
+
     // Transform the hough line coordinates to argos coordinates
     Vec4i l = lines[i];
     vector<double> argos_coordinates{(double)((l[1]+l[3])/2 - environment_width * 20 / 2) / 10.0f, (double)((l[0]+l[2])/2 - environment_height *20/ 2) / 10.0f};
-    CVector3 boxEntityPos{argos_coordinates.at(0), argos_coordinates.at(1), 0};
+   // CVector3 boxEntityPos{argos_coordinates.at(0), argos_coordinates.at(1), 0};
     double box_lenght = (sqrt(pow((double)(l[2]-l[0]),2.0f)+pow((double)(l[3]-l[1]),2.0f))+2)/10.0f;
-    boxEntitySize.Set(box_lenght,0.4,0.5);
-    const CRadians orientation = (CRadians)(atan2(l[2]-l[0],l[3]-l[1]));
+    double box_orientation = (atan2(l[2]-l[0],l[3]-l[1]));
+
+    myfile<<" <link name='"<<box_name.str()<<"'>\n";
+    myfile<<"   <pose>"<<to_string(argos_coordinates.at(0))<<" "<<to_string(argos_coordinates.at(1))<<" 0 0 0 "<<to_string(box_orientation)<<" </pose>\n";
+    myfile<<"   <collision name='"<<box_name.str()<<"_Collision'>\n";
+    myfile<<"     <pose>0 0 0.25 0 0 0</pose>\n";
+    myfile<<"   	<geometry>\n";
+    myfile<<"      		<box>\n";
+    myfile<<"         		<size>"<<to_string(box_lenght)<<" 0.1 1.0</size>\n";
+    myfile<<"      		</box>\n";
+    myfile<<"   	</geometry>\n";
+    myfile<<"   </collision>\n";
+    myfile<<"   <visual name='"<<box_name.str()<<"_Visual'>\n";
+    myfile<<"     <pose>0 0 0.25 0 0 0</pose>\n";
+    myfile<<"   	<geometry>\n";
+    myfile<<"      		<box>\n";
+    myfile<<"         		<size>"<<to_string(box_lenght)<<" 0.1 1.0</size>\n";
+    myfile<<"      		</box>\n";
+    myfile<<"   	</geometry>\n";
+    myfile<<"   	<material>\n";
+    myfile<<"   		<script>\n";
+    myfile<<"       		<uri>file://media/materials/scripts/gazebo.material</uri>\n";
+    myfile<<"           	 <name>Gazebo/Grey</name>\n";
+    myfile<<"			</script>\n";
+    myfile<<"		</material>\n";
+    myfile<<" 	</visual>\n";
+    myfile<<"</link>";
+    myfile<<"\n\n";
+
+
+
+    //boxEntitySize.Set(box_lenght,0.4,0.5);
+    /*const CRadians orientation = (CRadians)(atan2(l[2]-l[0],l[3]-l[1]));
     const CRadians zero_angle = (CRadians)0;
     boxEntityRot.FromEulerAngles(orientation,zero_angle,zero_angle);
 
@@ -610,13 +658,16 @@ void RandomEnvironmentGenerator::putLinesInEnvironment()
     loopfunction.AddEntity(*boxEntity);
 
     // Save the box entities to be accurately removed with reset
-    boxEntities.push_back(boxEntity);
+    boxEntities.push_back(boxEntity);*/
     it_box++;
 
   }
 
+  myfile<<"  </model> \n </sdf>";
+  myfile.close();
+
   total_boxes_generated=it_box-1;
-	 */
+
 }
 
 static float wraptopi(float number)
@@ -650,7 +701,7 @@ void RandomEnvironmentGenerator::RSSIMap()
 
 	// Dilate original corridor image
 	Mat corridor_contours_img_dilate;
-	int dilation_size = 3;
+	int dilation_size = 5;
 	Mat kernel = getStructuringElement(  MORPH_ELLIPSE,
 			Size( 2*dilation_size + 1, 2*dilation_size+1 ),
 			Point( dilation_size, dilation_size ) );
@@ -712,6 +763,8 @@ void RandomEnvironmentGenerator::RSSIMap()
 
 		}
 	}
+
+	addWeighted(check_slice_rssi_map,0.8,corridor_contours_img,0.2,0.0,check_slice_rssi_map);
 	namedWindow("display",WINDOW_NORMAL);// Create a window for display.
 
 	//normalize(check_slice_rssi_map,check_slice_rssi_map,255,0,NORM_MINMAX);
