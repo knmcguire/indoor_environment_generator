@@ -764,12 +764,12 @@ void RandomEnvironmentGenerator::RSSIMap()
 		}
 	}
 
-	addWeighted(check_slice_rssi_map,0.8,corridor_contours_img,0.2,0.0,check_slice_rssi_map);
+	/*addWeighted(check_slice_rssi_map,0.8,corridor_contours_img,0.2,0.0,check_slice_rssi_map);
 	namedWindow("display",WINDOW_NORMAL);// Create a window for display.
 
 	//normalize(check_slice_rssi_map,check_slice_rssi_map,255,0,NORM_MINMAX);
 	imshow("display", check_slice_rssi_map );                   // Show our image inside it.
-	waitKey(0);
+	waitKey(0);*Z*/
 
 
 	//display slice for debugging
