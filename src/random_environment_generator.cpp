@@ -21,7 +21,7 @@ RandomEnvironmentGenerator::RandomEnvironmentGenerator() :
 										  environment_height(10),
 										  change_agent_gostraight(0.7f),
 										  wanted_corridor_percentage(0.4f),
-										  room_percentage(0.4f),
+										  room_percentage(0.8f),
 										  total_boxes_generated(0),
 										  amount_of_openings(11),
 										  environment_accepted(false){}
@@ -44,6 +44,13 @@ void RandomEnvironmentGenerator::getRobotPositions( float* pos_bot_x, float* pos
 
 	// put on corridor agent on tower position
 	vector<int> initial_bot_position{0,0};
+
+	cout<<tower_position.at(0)<<endl;
+    // save tower position for later use
+	tower_position.at(0) = 0;// pos_tower[0];
+	cout<<"hello"<<endl;
+	tower_position.at(1) = pos_tower[1];
+
 	initial_bot_position.at(0)=pos_tower[0]/2+environment_width/2;
 	initial_bot_position.at(1)=pos_tower[1]/2+environment_height/2;
 	initial_bot_positions.push_back(initial_bot_position);
@@ -61,6 +68,9 @@ void RandomEnvironmentGenerator::Init(float arena_size_X, float arena_size_Y, fl
 
 	it_box = 0;
 
+	tower_position.resize(2);
+
+
 	// Initialize the generator
 	getRobotPositions( pos_bot_x,  pos_bot_y,  size_pos_bot,  pos_tower);
 	initializeGrid();
@@ -69,6 +79,14 @@ void RandomEnvironmentGenerator::Init(float arena_size_X, float arena_size_Y, fl
 	bin_corridor_img = Mat::zeros(environment_width, environment_height, CV_8UC1);
 	corridor_contours_img = Mat::zeros(bin_corridor_img_large.size(), CV_8UC1);
 
+
+
+	//vector<vector<vector<float>>> RSSI_map((float)20*environment_width, vector<vector<float>>((float)20*environment_height, vector<float>(120)));
+
+	RSSI_map.resize(20*environment_width);
+	for (int it = 0; it < 20*environment_width; it++) {
+		RSSI_map[it].resize(20*environment_height);
+	}
 }
 
 
@@ -117,8 +135,8 @@ void RandomEnvironmentGenerator::generateEnvironment(void)
 
 		makeBinaryImageCorridors();
 		makeBoundariesCorridors();
-		makeRooms();
-		makeRandomOpenings();
+		//makeRooms();
+		//makeRandomOpenings();
 
 
 
@@ -685,7 +703,7 @@ static float wraptopi(float number)
 void RandomEnvironmentGenerator::RSSIMap()
 {
 
-	float p[3] = {-0.08685 ,5.205e-17,1.329};
+	//float p[3] = {-0.08685 ,5.205e-17,1.329};
 
 	// Prepare the check image for debugging
 	Mat check_slice_rssi_map = Mat::zeros(corridor_contours_img.size(), CV_8UC1);
@@ -696,7 +714,6 @@ void RandomEnvironmentGenerator::RSSIMap()
 	Point tower_pos_img {(int)(20*initial_bot_positions.at(index_tower).at(0)),(int)(20*initial_bot_positions.at(index_tower).at(1))};
 
 	// Initialize look up table for rssi measurements
-	vector<vector<vector<float>>> RSSI_map((float)20*environment_width, vector<vector<float>>((float)20*environment_height, vector<float>(120)));
 
 
 	// Dilate original corridor image
@@ -717,28 +734,31 @@ void RandomEnvironmentGenerator::RSSIMap()
 	// go through each location in the map
 	for(int it_x = 0;it_x<20*environment_width;it_x++)
 	{
-		cout<<it_x<<endl;
 		for(int it_y = 0;it_y<20*environment_height;it_y++)
 		{
 
 
 			// Calculate distance to beacon
-			float distance = (float)sqrt(pow(tower_pos_img.x-it_x,2)+pow(tower_pos_img.y-it_y,2))/10.0f;
+			//float distance = (float)sqrt(pow(tower_pos_img.x-it_x,2)+pow(tower_pos_img.y-it_y,2))/10.0f;
 
 
 			// Go to bearing difference
-			for(int it_w = debug_heading;it_w<debug_heading+1;it_w++)
-			{
-
 				// calculate the bearing and the adjusted distance because of it
-				float bearing = wraptopi((float)atan2((float)(tower_pos_img.y-it_y)/10.0f,(float)(tower_pos_img.x-it_x)/10.0f)-heading[it_w]);
-				float distance_bearing = distance*(bearing*bearing*p[0]+bearing*p[1]+p[2]);
+				//float bearing = wraptopi((float)atan2((float)(tower_pos_img.y-it_y)/10.0f,(float)(tower_pos_img.x-it_x)/10.0f)-heading[it_w]);
+				//float distance_bearing = distance*(bearing*bearing*p[0]+bearing*p[1]+p[2]);
 
-
+				//cout<<"check "<<it_x<<"  "<<it_y<<endl;
 				// If location is not near a obstacle, then just input distance
 				if(corridor_contours_img_dilate.at<uchar>(it_x,it_y) < 200)
 				{
-					RSSI_map.at(it_x).at(it_y).at(it_w) = distance_bearing;
+					// small std in freespace
+					std::random_device rd;
+					std::mt19937 e2(rd());
+					std::normal_distribution<float> dist(0.0, 0.20f);
+					float noise = dist(e2);
+
+					//RSSI_map.at(it_x).at(it_y) = distance_bearing;
+					RSSI_map.at(it_x).at(it_y) = noise;
 
 
 				}else
@@ -746,20 +766,17 @@ void RandomEnvironmentGenerator::RSSIMap()
 					// Normal distribution with a high std around obstacles
 					std::random_device rd;
 					std::mt19937 e2(rd());
-					std::normal_distribution<float> dist(distance_bearing, 2.0f);
-					float noisy_distance = dist(e2);
-					if(noisy_distance>0)
-						RSSI_map.at(it_x).at(it_y).at(it_w) = noisy_distance;
-					else
-						RSSI_map.at(it_x).at(it_y).at(it_w) = distance_bearing;
+					std::normal_distribution<float> dist(0, 2.0f);
+					float noise = 2000;//dist(e2);
+						RSSI_map.at(it_x).at(it_y) = noise;
 				}
 
 				// Save a slice of the rssi map for debugging
-				if(it_w == debug_heading)
-					check_slice_rssi_map.at<uchar>(it_x,it_y)=(uchar)RSSI_map.at(it_x).at(it_y).at(it_w)*10;
+				//if(it_w == debug_heading)
+					//check_slice_rssi_map.at<uchar>(it_x,it_y)=(uchar)RSSI_map.at(it_x).at(it_y).at(it_w)*10;
 
 
-			}
+
 
 		}
 	}
@@ -773,6 +790,33 @@ void RandomEnvironmentGenerator::RSSIMap()
 
 
 	//display slice for debugging
+
+}
+
+float RandomEnvironmentGenerator::getRSSITower(float x, float y, float heading)
+{
+
+
+
+	float p[3] = {-0.08685 ,5.205e-17,1.329};
+
+
+	float distance = (float)sqrt(pow(tower_position.at(0)-x,2)+pow(tower_position.at(1)-y,2));
+	float bearing = wraptopi((float)atan2((float)(tower_position.at(1)-y),(float)(tower_position.at(0)-x))-heading);
+	float distance_bearing = distance*(bearing*bearing*p[0]+bearing*p[1]+p[2]);
+	float noisy_distance = distance_bearing + RSSI_map.at((int)(roundf((-x+environment_width)*10))).at((int)(roundf((-y+environment_height)*10)));
+
+	//cout<<"coordinates  "<<x<<"  "<<y<<"    "<<(roundf((x+environment_width)*10))<<"   "<<(roundf((-x+environment_height)*10))<<endl;
+
+	//RSSI = Pn - 10*gamma*log10(distance)
+	float Pn = 47.0f;
+	float gamma_rssi = 4.0f;
+
+	float noisy_RSSI = Pn - 10*gamma_rssi*log10(noisy_distance);
+
+	 if(RSSI_map.at((int)(roundf((-x+environment_width)*10))).at((int)(roundf((-y+environment_height)*10)))==2000)
+		 noisy_RSSI = 2000;
+	return noisy_RSSI;//RSSI_map.at((int)x).at((int)y).at((int)(heading * 180.0 / (M_PI *3)));
 
 }
 

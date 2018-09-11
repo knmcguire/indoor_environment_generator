@@ -64,13 +64,15 @@ public:
   void dfs(int x, int y, int current_label);
 
   void RSSIMap();
+  float getRSSITower(float x, float y, float heading);
+
 
 
 private:
   std::vector<std::vector<grid_element_status_t> > environment_grid;
   int environment_width;
   int environment_height;
-  std::vector<int> tower_position;
+  std::vector<float> tower_position;
   std::vector<std::vector<int> > initial_bot_positions;
   std::vector<std::vector<int> > current_agent_positions;
   float change_agent_gostraight;
@@ -90,6 +92,9 @@ private:
   int it_box;
 
   bool corridors_are_connected;
+
+  std::vector<std::vector<float> > RSSI_map;
+
 
 
 
