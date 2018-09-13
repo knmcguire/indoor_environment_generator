@@ -75,15 +75,21 @@ bool indoorGenCallback(std_srvs::Trigger::Request  &req,
 	// Get position bot from gazebo
 
 
+// place holder
+	/*float pos_bot_x_temp[2] = {-3, 6};
+	float pos_bot_y_temp[2] = {-6,-3};*/
 
 
+	float pos_bot_x_temp[2] = {0, -4};
+	float pos_bot_y_temp[2] = {0,0};
 
+  //  cout<<pos_bot_x[0]<<" "<<pos_bot_y[0]<<endl;
+  //  cout<<pos_bot_x[1]<<" "<<pos_bot_y[1]<<endl;
 
-
-	//float pos_bot_x[1] = {-6};
-	//float pos_bot_y[1] = {-6};
-	float pos_tower[2] = {5,5};
+	float pos_tower[2] = {4,4};
 	  randomEnvironmentGenerator.Init(20,20,pos_bot_x,pos_bot_y,num_bots,pos_tower);
+	  //randomEnvironmentGenerator.Init(20,20,pos_bot_x_temp,pos_bot_y_temp,num_bots,pos_tower);
+
 	  randomEnvironmentGenerator.generateEnvironment();
 	 // randomEnvironmentGenerator.Reset();
 	  random_environment_available = true;
