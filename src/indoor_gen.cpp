@@ -29,6 +29,8 @@ float pos_bot_heading[num_bots];
 
 bool random_environment_available = false;
 
+#define SIMULATOR_IS_GAZEBO false
+
 
 void poseUAV1CallBack(const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
@@ -68,6 +70,12 @@ void poseUAV3CallBack(const geometry_msgs::PoseStamped::ConstPtr& msg)
 	pos_bot_y[2] =msg->pose.position.y;
 }
 
+void getRSSITowerCallback(std_srvs::Trigger::Request  &req,
+		std_srvs::Trigger::Response &res)
+{
+
+}
+
 
 bool indoorGenCallback(std_srvs::Trigger::Request  &req,
 		std_srvs::Trigger::Response &res)
@@ -103,22 +111,22 @@ bool indoorGenCallback(std_srvs::Trigger::Request  &req,
 int main(int argc, char **argv)
 {
 
-  ros::init(argc, argv, "listener");
+	ros::init(argc, argv, "listener");
+	ros::NodeHandle n;
 
 
-  ros::NodeHandle n;
-
-  //ros::Duration(5).sleep();
-
-	ros::Subscriber sub = n.subscribe("/UAV1/ground_truth_to_tf/pose", 1000, poseUAV1CallBack);
+	//ros::Subscriber sub = n.subscribe("/UAV1/ground_truth_to_tf/pose", 1000, poseUAV1CallBack);
 
 
 	ros::Subscriber sub1,sub2,sub3;
   //subscribe for position
 	for(int it = 1;it<num_bots+1;it++)
 	{
+#if SIMULATOR_IS_GAZEBO == true
 		std::string topic_name_pos = "/UAV" + std::to_string(it)+"/ground_truth_to_tf/pose";
-
+#else
+		std::string topic_name_pos = "/bot" + std::to_string(it)+"/position";
+#endif
 		cout<<"topic names "<<topic_name_pos<<endl;
 		//topic_name_pos_y = 'UAV' + std::to_string(it)+'ground_truth_to_tf/pose';
 		//const geometry_msgs::PoseStamped::ConstPtr& msg = ros::topic::waitForMessage<geometry_msgs::PoseStamped>(topic_name_pos_x);
@@ -142,13 +150,18 @@ int main(int argc, char **argv)
 
  // ros::Subscriber sub = n.subscribe("indoor_gen", 1000, indoorGenCallback);
   ros::ServiceServer service = n.advertiseService("indoor_gen", indoorGenCallback);
+  ros::ServiceServer service2 = n.advertiseService("get_rssi_to_tower", getRSSITowerCallback);
 
 
   ros::Publisher rssi_tower_array[num_bots];
 	for(int it = 1;it<num_bots+1;it++)
 	{
-		std::string topic = "/UAV" + std::to_string(it)+"/RSSI_to_tower";
 
+#if SIMULATOR_IS_GAZEBO == true
+		std::string topic = "/UAV" + std::to_string(it)+"/RSSI_to_tower";
+#else
+		std::string topic_name_pos = "/bot" + std::to_string(it)+"/RSSI_to_tower";
+#endif
 		rssi_tower_array[it-1]= n.advertise<std_msgs::Float32>(topic,1000);
 	}
 
@@ -162,7 +175,7 @@ int main(int argc, char **argv)
 
 			std_msgs::Float32 msg;
 			//if(random_environment_available)
-				msg.data = randomEnvironmentGenerator.getRSSITower(pos_bot_x[it-1],pos_bot_y[it-1],pos_bot_heading[it-1]);
+			msg.data = randomEnvironmentGenerator.getRSSITower(pos_bot_x[it-1],pos_bot_y[it-1],pos_bot_heading[it-1]);
 			rssi_tower_array[it-1].publish(msg);
 
 		}
