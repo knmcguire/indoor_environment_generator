@@ -615,41 +615,7 @@ void RandomEnvironmentGenerator::makeRandomOpenings()
 void RandomEnvironmentGenerator::putBlocksInEnvironment()
 {
 
-	/*
-
-  CBoxEntity* boxEntity;
-#if EFFICIENT_ENVIRONMENT
-  CVector3 boxEntitySize{0.3, 0.3, 0.5};
-#else
-  CVector3 boxEntitySize{0.1, 0.1, 0.5};
-#endif
-  CQuaternion boxEntityRot{0, 0, 0, 0};
-
-  std::ostringstream box_name;
-
-
-  CLoopFunctions loopfunction;
-  for (int itx = 0; itx < environment_width * 20; itx++) {
-    for (int ity = 0; ity < environment_height * 20; ity++) {
-      if (corridor_contours_img.at<uchar>(ity, itx) == 255) {
-        box_name.str("");
-        box_name << "box" << (it_box);
-        vector<double> argos_coordinates{(double)(itx - environment_width * 10) / 10.0f, (double)(ity - environment_height * 10) / 10.0f};
-        CVector3 boxEntityPos{argos_coordinates.at(1), argos_coordinates.at(0), 0};
-        boxEntity = new CBoxEntity(box_name.str(), boxEntityPos, boxEntityRot, false, boxEntitySize);
-
-        loopfunction.AddEntity(*boxEntity);
-
-        boxEntities.push_back(boxEntity);
-
-
-        it_box++;
-      }
-
-    }
-  }
-  total_boxes_generated=it_box-1;
-	 */
+// ToDo, see if this is still necessary for gazebo
 
 }
 
@@ -657,50 +623,36 @@ void RandomEnvironmentGenerator::putBlocksInEnvironment()
 void RandomEnvironmentGenerator::putLinesInEnvironment()
 {
 
-	cout<<"put lines in model"<<endl;
+     cout<<"put lines in model"<<endl;
 
-//Open sdf file for environment
+   //Open sdf file for environment and add starting lines
   ofstream myfile;
   myfile.open ("/home/knmcguire/Software/catkin_ws/src/indoor_environment_generator/models/random_generated_environment/test_model.sdf");
   myfile << "<?xml version='1.0'?>\n <sdf version='1.4'> \n <model name='crazy_maze'> \n <static>1</static>\n";
 
-  // Initialize box entity characteristics
-		  /*
-  CBoxEntity* boxEntity;
-  CQuaternion boxEntityRot{0, 0, 0, 0};
-  CVector3 boxEntitySize{0.1, 0.1, 0.5};
+
+  ofstream lines_file;
+  lines_file.open("environment_lines.txt");
+
+
+  // Initialize box_name string
   std::ostringstream box_name;
 
-  CLoopFunctions loopfunction;*/
-
-  std::ostringstream box_name;
-
-
+  // indicate number of paramid levels for the hough line detection
   int num_of_iterations = 3;
 
+  // Go throught multiple levels of hougline detection
   for (int it_total= 0; it_total<num_of_iterations;it_total++)
   {
-
-
-
-
+	  // Resize the environment image per layer
 	  Mat corridor_contours_img_lines = Mat::zeros(environment_width * 10*(it_total+1), environment_height * 10*(it_total+1), CV_8UC1);
+	  resize(corridor_contours_img, corridor_contours_img_lines, corridor_contours_img_lines.size(), 0, 0, INTER_NEAREST);
 
-
-
-     resize(corridor_contours_img, corridor_contours_img_lines, corridor_contours_img_lines.size(), 0, 0, INTER_NEAREST);
-
-
-	  // Show our image inside it.
+	  // Detect houghlines in image
 	  vector<Vec4i> lines;
 	  HoughLinesP(corridor_contours_img_lines, lines, 1, CV_PI/180*45, 20, num_of_iterations, 0 );
 
-
-
-
-
-
-	  // img_lines for debugging
+	  // Remove lines from original image to see how many of the walls were handled (for debugging)
 	  Mat img_lines = corridor_contours_img.clone();
 
 	  for( size_t i = 0; i < lines.size(); i++ )
@@ -710,14 +662,10 @@ void RandomEnvironmentGenerator::putLinesInEnvironment()
 		  int line_point_x[2] = {l[0]/(it_total+1),l[2]/(it_total+1)};
 		  int line_point_y[2] = {l[1]/(it_total+1),l[3]/(it_total+1)};
 
-
-
-
 		  line( img_lines, Point(line_point_x[0], line_point_y[0]), Point(line_point_x[1],line_point_y[1]), Scalar(100,100,100), 3, CV_AA);
 
 		  // Remove lines from corridor contour image to later save for blocks placement
 		  line(corridor_contours_img,Point(line_point_x[0], line_point_y[0]), Point(line_point_x[1],line_point_y[1]), Scalar(0,0,0), 1, CV_AA);
-
 	  }
 
 		/*namedWindow( "Environment",WINDOW_NORMAL );
@@ -725,28 +673,29 @@ void RandomEnvironmentGenerator::putLinesInEnvironment()
 		char key = (char)waitKey(0);
 	*/
 
+	  // Put the detected lines in .sdf file for gazebo
 	  for( size_t i = 0; i < lines.size(); i++ )
 	  {
 
+		  // give the box a unique name
 		  box_name.str("");
 		  box_name << "box" << (it_box);
 
-		  // Transform the hough line coordinates to argos coordinates (now gazebo)
+		  // Transform the hough line coordinates to gazebo coordinates
 		  Vec4i l = lines[i];
-		  //vector<double> argos_coordinates{(double)((l[1]+l[3])/2 - environment_width * 10 / 2) / 10.0f, (double)((l[0]+l[2])/2 - environment_height *10 / 2) / 10.0f};
-		  double argos_coordinates_x = (double)((l[0]+l[2])/(2*(it_total+1)) - ((double)environment_width * 10.0f / 2.0f)) / (10.0f);
-		  double argos_coordinates_y = (double)((l[1]+l[3])/(2*(it_total+1)) - ((double)environment_height * 10.0f / 2.0f)) / (10.0f);
+		  double gazebo_coordinates_x = (double)((l[0]+l[2])/(2*(it_total+1)) - ((double)environment_width * 10.0f / 2.0f)) / (10.0f);
+		  double gazebo_coordinates_y = (double)((l[1]+l[3])/(2*(it_total+1)) - ((double)environment_height * 10.0f / 2.0f)) / (10.0f);
+		  vector<double> gazebo_coordinates{gazebo_coordinates_x,gazebo_coordinates_y };
 
-		  vector<double> argos_coordinates{argos_coordinates_x,argos_coordinates_y };
-
-		  // CVector3 boxEntityPos{argos_coordinates.at(0), argos_coordinates.at(1), 0};
-
-
+		  // Determine the box length and orientation
 		  double box_lenght = (sqrt(pow((double)(l[2]-l[0]),2.0f)+pow((double)(l[3]-l[1]),2.0f))+2)/(10.0f*(it_total+1));
 		  double box_orientation = (atan2(l[3]-l[1],l[2]-l[0]));
 
+		  lines_file<<l[0]<<" "<<l[1]<<" "<<l[2]<<" "<<l[3]<<"\n";
+
+		  // Write box entities in environment file
 		  myfile<<" <link name='"<<box_name.str()<<"'>\n";
-		  myfile<<"   <pose>"<<to_string(argos_coordinates.at(0))<<" "<<to_string(argos_coordinates.at(1))<<" 0 0 0 "<<to_string(box_orientation)<<" </pose>\n";
+		  myfile<<"   <pose>"<<to_string(gazebo_coordinates.at(0))<<" "<<to_string(gazebo_coordinates.at(1))<<" 0 0 0 "<<to_string(box_orientation)<<" </pose>\n";
 		  myfile<<"   <collision name='"<<box_name.str()<<"_Collision'>\n";
 		  myfile<<"     <pose>0 0 0.25 0 0 0</pose>\n";
 		  myfile<<"   	<geometry>\n";
@@ -772,78 +721,18 @@ void RandomEnvironmentGenerator::putLinesInEnvironment()
 		  myfile<<"</link>";
 		  myfile<<"\n\n";
 
-
-
-		  //boxEntitySize.Set(box_lenght,0.4,0.5);
-		  /*const CRadians orientation = (CRadians)(atan2(l[2]-l[0],l[3]-l[1]));
-    const CRadians zero_angle = (CRadians)0;
-    boxEntityRot.FromEulerAngles(orientation,zero_angle,zero_angle);
-
-    // Set entity in environment
-    box_name.str("");
-    box_name << "box" << (it_box);
-    boxEntity = new CBoxEntity(box_name.str(), boxEntityPos, boxEntityRot, false, boxEntitySize);
-    loopfunction.AddEntity(*boxEntity);
-
-    // Save the box entities to be accurately removed with reset
-    boxEntities.push_back(boxEntity);*/
+		  // count how many boxes were entered
 		  it_box++;
 
 	  }
   }
 
-  // Add boxes to it for the rest
-/*
-  for (int itx = 0; itx < environment_width * 10; itx++) {
-    for (int ity = 0; ity < environment_height * 10; ity++) {
-      if (corridor_contours_img.at<uchar>(ity, itx) == 255)
-      {
-   	   box_name.str("");
-   	   box_name << "box" << (it_box);
 
-       double argos_coordinates_x = (double)(itx - ((double)environment_width * 10.0f / 2.0f)) / 10.0f;
-       double argos_coordinates_y = (double)(ity - ((double)environment_height * 10.0f / 2.0f)) / 10.0f;
-
-       vector<double> argos_coordinates{argos_coordinates_x,argos_coordinates_y };
-
-       myfile<<" <link name='"<<box_name.str()<<"'>\n";
-       myfile<<"   <pose>"<<to_string(argos_coordinates.at(0))<<" "<<to_string(argos_coordinates.at(1))<<" 0 0 0 0 </pose>\n";
-       myfile<<"   <collision name='"<<box_name.str()<<"_Collision'>\n";
-       myfile<<"     <pose>0 0 0.25 0 0 0</pose>\n";
-       myfile<<"   	<geometry>\n";
-       myfile<<"      		<box>\n";
-       myfile<<"         		<size>0.1 0.1 1.0</size>\n";
-       myfile<<"      		</box>\n";
-       myfile<<"   	</geometry>\n";
-       myfile<<"   </collision>\n";
-       myfile<<"   <visual name='"<<box_name.str()<<"_Visual'>\n";
-       myfile<<"     <pose>0 0 0.25 0 0 0</pose>\n";
-       myfile<<"   	<geometry>\n";
-       myfile<<"      		<box>\n";
-       myfile<<"         		<size>0.1 0.1 1.0</size>\n";
-       myfile<<"      		</box>\n";
-       myfile<<"   	</geometry>\n";
-       myfile<<"   	<material>\n";
-       myfile<<"   		<script>\n";
-       myfile<<"       		<uri>file://media/materials/scripts/gazebo.material</uri>\n";
-       myfile<<"           	 <name>Gazebo/Grey</name>\n";
-       myfile<<"			</script>\n";
-       myfile<<"		</material>\n";
-       myfile<<" 	</visual>\n";
-       myfile<<"</link>";
-       myfile<<"\n\n";
-       it_box++;
-
-      }
-    }
-  }*/
-
-
+  // Save the environment file and save how many elements it took
   myfile<<"  </model> \n </sdf>";
   myfile.close();
-
   total_boxes_generated=it_box-1;
-
+  lines_file.close();
 }
 
 static float wraptopi(float number)
