@@ -15,6 +15,7 @@ using namespace std;
 using namespace cv;
 
 #define EFFICIENT_ENVIRONMENT true
+#define ACCEPT_ENVIRONMENT true
 
 RandomEnvironmentGenerator::RandomEnvironmentGenerator() :
 										  environment_width(10),
@@ -23,9 +24,10 @@ RandomEnvironmentGenerator::RandomEnvironmentGenerator() :
 										  wanted_corridor_percentage(0.35f),
 										  room_percentage(0.4f),
 										  total_boxes_generated(0),
-										  amount_of_openings(11),
+										  amount_of_openings(5),
 										  environment_accepted(false),
-										  corridor_size_meters(2){}
+										  corridor_size_meters(2),
+										  is_initialized(false){}
 
 
 
@@ -81,7 +83,7 @@ void RandomEnvironmentGenerator::getRobotPositions( float* pos_bot_x, float* pos
 	initial_tower_position.at(1)=pos_tower_y_grid;
 	initial_bot_positions.push_back(initial_tower_position);
 
-
+	is_initialized = true;
 }
 
 void RandomEnvironmentGenerator::Init(float arena_size_X, float arena_size_Y, float* pos_bot_x, float* pos_bot_y, int size_pos_bot, float* pos_tower)
@@ -112,7 +114,7 @@ void RandomEnvironmentGenerator::Init(float arena_size_X, float arena_size_Y, fl
 	corridor_contours_img = Mat::zeros(bin_corridor_img_large.size(), CV_8UC1);
 
 
-	RSSI_map.resize(20*environment_width);
+	RSSI_map.resize(10*environment_width);
 	for (int it = 0; it < 10*environment_width; it++) {
 		RSSI_map[it].resize(10*environment_height);
 	}
@@ -196,8 +198,8 @@ void RandomEnvironmentGenerator::generateEnvironment(void)
 		makeBoundariesCorridors();
 
 
-		//makeRooms();
-		//makeRandomOpenings();
+		makeRooms();
+		makeRandomOpenings();
 
 
 
@@ -215,9 +217,8 @@ void RandomEnvironmentGenerator::generateEnvironment(void)
 
 		for(int it = 0;it<initial_bot_positions.size();it++)
 		{
-			Point tower_pos {(int)(20*initial_bot_positions.at(it).at(0) ),(int)(20*initial_bot_positions.at(it).at(1))};
+			Point tower_pos {(int)(10*corridor_size_meters*initial_bot_positions.at(it).at(0) ),(int)(10*corridor_size_meters*initial_bot_positions.at(it).at(1))};
 
-			cout<<tower_pos<<endl;
 			if(it==initial_bot_positions.size()-1)
 			{
 
@@ -939,6 +940,27 @@ void RandomEnvironmentGenerator::RSSIMap()
 		}
 	}
 
+
+	cout<<"make copy"<<endl;
+    std::fstream of("Map.txt", std::ios::out);
+    if (of.is_open())
+     {
+        of<<10*environment_width<<" "<<10*environment_height<<"\n";
+
+    	   for (int it_x = 0; it_x < 10*environment_width; ++it_x)
+    	    {
+    	        for (int it_y = 0; it_y < 10*environment_height; ++it_y)
+    	        {
+    	        	of << RSSI_map.at(it_x).at(it_y)<<" ";
+    	        }
+    	        of<<"\n";
+    	    }
+         of.close();
+     }
+
+
+
+
 	/*addWeighted(check_slice_rssi_map,0.8,corridor_contours_img,0.2,0.0,check_slice_rssi_map);
 	namedWindow("display",WINDOW_NORMAL);// Create a window for display.
 
@@ -953,6 +975,60 @@ void RandomEnvironmentGenerator::RSSIMap()
 
 float RandomEnvironmentGenerator::getRSSITower(float x, float y, float heading)
 {
+
+	if(!is_initialized)
+	{
+	ifstream myReadFile;
+	    myReadFile.open("Map.txt");
+
+	    std::vector<std::vector<float> > RSSI_map_temp;
+
+
+		cout<<"get copy"<<endl;
+
+
+		float tmpValue;
+		int map_width, map_height;
+	    myReadFile  >> tmpValue;
+	    map_width = (int)tmpValue;
+	    myReadFile  >> tmpValue;
+	    map_height = (int)tmpValue;
+
+	    environment_width = map_width/10;
+	    environment_height = map_height/10;
+
+	    cout<<"size "<<environment_width<<" "<<environment_height<<endl;
+
+
+
+	    RSSI_map.resize(map_width);
+		for (int it = 0; it < map_width; it++) {
+			RSSI_map[it].resize(map_height);
+		}
+
+
+		if (!myReadFile.eof()) {
+		    for(int it_x = 0; it_x < map_width; it_x++){
+		        float tmpValueF;
+
+		        for (int it_y = 0; it_y < map_height; it_y++){
+		            myReadFile  >> tmpValueF;
+		            RSSI_map.at(it_x).at(it_y)= (float)tmpValueF;
+		        }
+		    }
+		}
+
+		tower_position.resize(2);
+
+		tower_position.at(0)=4;
+		tower_position.at(1)=4;
+
+		is_initialized = true;
+
+		cout<<"got copy"<<endl;
+	}
+
+
 
    int x_to_image = (int)(roundf((x+environment_width/2)*10));
    int y_to_image = (int)(roundf((y+environment_height/2)*10));
@@ -982,7 +1058,6 @@ float RandomEnvironmentGenerator::getRSSITower(float x, float y, float heading)
 	float noisy_distance = distance + RSSI_map.at(x_to_image).at(y_to_image);
 
 	float bearing = wraptopi((float)atan2((float)(tower_position.at(1)-y),(float)(tower_position.at(0)-x))-heading);
-	cout<<"bearing "<<bearing<<endl;
 	float noisy_distance_bearing = noisy_distance*(bearing*bearing*p[0]+bearing*p[1]+p[2]);
 	//cout<<"distancwe bearing "<<distance_bearing<<endl;
 
@@ -994,7 +1069,6 @@ float RandomEnvironmentGenerator::getRSSITower(float x, float y, float heading)
 	float gamma_rssi = 4.0f;
 
 	float noisy_RSSI = Pn - 10*gamma_rssi*log10(noisy_distance_bearing);
-	cout<<noisy_RSSI<<endl;
 
 
 

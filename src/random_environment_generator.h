@@ -101,6 +101,8 @@ private:
   int corridor_size_meters;
 
 
+  bool is_initialized;
+
 
 
 };

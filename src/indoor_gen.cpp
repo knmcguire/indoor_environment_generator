@@ -94,7 +94,10 @@ bool indoorGenCallback(std_srvs::Trigger::Request  &req,
 	 // randomEnvironmentGenerator.Reset();
 	  random_environment_available = true;
 
-return true;
+	  res.message = "jeej";
+	  res.success = true;
+
+	  return true;
 }
 
 int main(int argc, char **argv)
@@ -158,7 +161,7 @@ int main(int argc, char **argv)
 		{
 
 			std_msgs::Float32 msg;
-			if(random_environment_available)
+			//if(random_environment_available)
 				msg.data = randomEnvironmentGenerator.getRSSITower(pos_bot_x[it-1],pos_bot_y[it-1],pos_bot_heading[it-1]);
 			rssi_tower_array[it-1].publish(msg);
 
