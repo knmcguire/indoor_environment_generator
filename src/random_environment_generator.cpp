@@ -15,7 +15,7 @@ using namespace std;
 using namespace cv;
 
 #define EFFICIENT_ENVIRONMENT true
-#define ACCEPT_ENVIRONMENT true
+#define ACCEPT_ENVIRONMENT false
 
 RandomEnvironmentGenerator::RandomEnvironmentGenerator() :
 										  environment_width(10),
@@ -106,6 +106,7 @@ void RandomEnvironmentGenerator::Init(float arena_size_X, float arena_size_Y, fl
 	tower_position.resize(2);
 
 	// Initialize the generator
+	initial_bot_positions.clear();
 	getRobotPositions( pos_bot_x,  pos_bot_y,  size_pos_bot,  pos_tower);
 	initializeGrid();
 	initializeAgents();
@@ -167,7 +168,6 @@ void RandomEnvironmentGenerator::generateEnvironment(void)
 				}
 
 				// if corridor percentage is reached, terminate
-				cout<<getCorridorPercentage()<<endl;
 				if (getCorridorPercentage() > wanted_corridor_percentage) {
 					break;
 				}
@@ -210,7 +210,7 @@ void RandomEnvironmentGenerator::generateEnvironment(void)
 
 
 
-#ifdef ACCEPT_ENVIRONMENT
+#if ACCEPT_ENVIRONMENT
 		Mat corridor_contours_img_extra;
 
 		cvtColor(corridor_contours_img.clone(),corridor_contours_img_extra,COLOR_GRAY2RGB);
@@ -691,7 +691,7 @@ void RandomEnvironmentGenerator::putLinesInEnvironment()
 		  double box_lenght = (sqrt(pow((double)(l[2]-l[0]),2.0f)+pow((double)(l[3]-l[1]),2.0f))+2)/(10.0f*(it_total+1));
 		  double box_orientation = (atan2(l[3]-l[1],l[2]-l[0]));
 
-		  lines_file<<l[0]<<" "<<l[1]<<" "<<l[2]<<" "<<l[3]<<"\n";
+		  lines_file<<l[0]/(it_total+1)<<" "<<l[1]/(it_total+1)<<" "<<l[2]/(it_total+1)<<" "<<l[3]/(it_total+1)<<"\n";
 
 		  // Write box entities in environment file
 		  myfile<<" <link name='"<<box_name.str()<<"'>\n";

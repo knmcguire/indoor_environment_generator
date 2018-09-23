@@ -20,7 +20,7 @@
 using namespace std;
 
 RandomEnvironmentGenerator randomEnvironmentGenerator;
-const int num_bots = 2;
+const int num_bots = 1;
 
 
 float pos_bot_x[num_bots];
@@ -150,17 +150,17 @@ int main(int argc, char **argv)
 
  // ros::Subscriber sub = n.subscribe("indoor_gen", 1000, indoorGenCallback);
   ros::ServiceServer service = n.advertiseService("indoor_gen", indoorGenCallback);
-  ros::ServiceServer service2 = n.advertiseService("get_rssi_to_tower", getRSSITowerCallback);
+ // ros::ServiceServer service2 = n.advertiseService("get_rssi_to_tower", getRSSITowerCallback);
 
 
   ros::Publisher rssi_tower_array[num_bots];
 	for(int it = 1;it<num_bots+1;it++)
 	{
-
+		std::string topic;
 #if SIMULATOR_IS_GAZEBO == true
-		std::string topic = "/UAV" + std::to_string(it)+"/RSSI_to_tower";
+		topic = "/UAV" + std::to_string(it)+"/RSSI_to_tower";
 #else
-		std::string topic_name_pos = "/bot" + std::to_string(it)+"/RSSI_to_tower";
+		topic = "/bot" + std::to_string(it)+"/RSSI_to_tower";
 #endif
 		rssi_tower_array[it-1]= n.advertise<std_msgs::Float32>(topic,1000);
 	}
