@@ -909,8 +909,8 @@ float RandomEnvironmentGenerator::getRSSITower(float x, float y, float heading)
 
 		tower_position.resize(2);
 
-		tower_position.at(0)=4;
-		tower_position.at(1)=4;
+		tower_position.at(0)=0;
+		tower_position.at(1)=0;
 
 		is_initialized = true;
 
@@ -957,7 +957,12 @@ float RandomEnvironmentGenerator::getRSSITower(float x, float y, float heading)
 	float Pn = -47.0f;
 	float gamma_rssi = 4.0f;
 
+	// UNCOMMENT THIS TO USE RSSI MODEL.
 	float noisy_RSSI = Pn - 10*gamma_rssi*log10(noisy_distance_bearing);
+	//float noisy_RSSI = Pn - 10*gamma_rssi*log10(distance);
+
+	if (noisy_RSSI>-43)
+		noisy_RSSI = -43;
 
 
 
