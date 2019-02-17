@@ -20,7 +20,7 @@ using namespace cv;
 RandomEnvironmentGenerator::RandomEnvironmentGenerator() :
 										  environment_width(10),
 										  environment_height(10),
-										  change_agent_gostraight(0.8f),
+										  change_agent_gostraight(0.77f),
 										  wanted_corridor_percentage(0.35f),
 										  room_percentage(0.4f),
 										  total_boxes_generated(0),
@@ -907,6 +907,7 @@ float RandomEnvironmentGenerator::getRSSITower(float x, float y, float heading)
 		    }
 		}
 
+       //TODO: Automatically set tower position (maybe based on a text file?)
 		tower_position.resize(2);
 
 		tower_position.at(0)=0;
@@ -959,10 +960,12 @@ float RandomEnvironmentGenerator::getRSSITower(float x, float y, float heading)
 
 	// UNCOMMENT THIS TO USE RSSI MODEL.
 	float noisy_RSSI = Pn - 10*gamma_rssi*log10(noisy_distance_bearing);
-	//float noisy_RSSI = Pn - 10*gamma_rssi*log10(distance);
+//float noisy_RSSI = Pn - 10*gamma_rssi*log10(distance);
 
 	if (noisy_RSSI>-43)
 		noisy_RSSI = -43;
+
+	//noisy_RSSI = distance*2;
 
 
 

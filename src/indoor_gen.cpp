@@ -20,7 +20,7 @@
 using namespace std;
 
 RandomEnvironmentGenerator randomEnvironmentGenerator;
-const int num_bots = 8;
+const int num_bots = 10;
 
 
 float pos_bot_x[num_bots];
@@ -142,6 +142,18 @@ void poseUAV9CallBack(const geometry_msgs::PoseStamped::ConstPtr& msg)
 	pos_bot_y[8] =msg->pose.position.y;
 }
 
+void poseUAV10CallBack(const geometry_msgs::PoseStamped::ConstPtr& msg)
+{
+	tf::Quaternion q(msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z, msg->pose.orientation.w);
+	tf::Matrix3x3 m(q);
+	double roll, pitch, yaw;
+	m.getRPY(roll, pitch, yaw);
+
+	pos_bot_heading[2]=(float)yaw;
+	pos_bot_x[9] = msg->pose.position.x;
+	pos_bot_y[9] =msg->pose.position.y;
+}
+
 void getRSSITowerCallback(std_srvs::Trigger::Request  &req,
 		std_srvs::Trigger::Response &res)
 {
@@ -160,8 +172,8 @@ bool indoorGenCallback(std_srvs::Trigger::Request  &req,
 	float pos_bot_y_temp[2] = {-6,-3};*/
 
 
-	float pos_bot_x_temp[num_bots] = {-8, -8,8,8,0,0,0,0};
-	float pos_bot_y_temp[num_bots] = {-8,8,-8,8,0,0,0,0};
+	float pos_bot_x_temp[num_bots] = {-8, -8,8,8,0,0,0,0, 0};
+	float pos_bot_y_temp[num_bots] = {-8,8,-8,8,0,0,0,0,0};
 
   //  cout<<pos_bot_x[0]<<" "<<pos_bot_y[0]<<endl;
   //  cout<<pos_bot_x[1]<<" "<<pos_bot_y[1]<<endl;
@@ -192,7 +204,7 @@ int main(int argc, char **argv)
 	//ros::Subscriber sub = n.subscribe("/UAV1/ground_truth_to_tf/pose", 1000, poseUAV1CallBack);
 
 
-	ros::Subscriber sub1,sub2,sub3,sub4,sub5,sub6,sub7,sub8;
+	ros::Subscriber sub1,sub2,sub3,sub4,sub5,sub6,sub7,sub8,sub9;
   //subscribe for position
 	for(int it = 1;it<num_bots+1;it++)
 	{
@@ -222,7 +234,8 @@ int main(int argc, char **argv)
 			sub7 = n.subscribe(topic_name_pos, 1000, poseUAV7CallBack);
 		else if (it==8)
 			sub8 = n.subscribe(topic_name_pos, 1000, poseUAV8CallBack);
-
+		else if (it==9)
+			sub9 = n.subscribe(topic_name_pos, 1000, poseUAV9CallBack);
 		//cout<<"robot pos cb "<<it<<" "<<pos_bot_x[it-1]<<"  "<<pos_bot_y[it-1]<<endl;
 
 	}
